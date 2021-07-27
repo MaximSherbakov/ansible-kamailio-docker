@@ -1,0 +1,32 @@
+---
+- name: Create directory for kamailio
+  file:
+    path: '{{ kamailio_path }}'
+    state: directory
+
+- name: Copy kamailio.cfg template
+  template:
+    src: "{{ item }}"
+    dest: '{{ kamailio_path }}/{{ item | basename | regex_replace("\.j2", "")}}'
+  with_fileglob:
+     - ../templates/*.j2
+
+- name: Create docker network for Kamailio
+  docker_network:
+    name: '{{ network_name }}'
+
+- name: Create kamailio 5.4 container
+  docker_container:
+    name: '{{ kamailio_container_name }}'
+    image: '{{ kamailio_image }}'
+    volumes: '{{ kamailio_mount_path }}'
+    ports: '{{ kamailio_ports }}'
+    networks_cli_compatible: yes
+    networks:
+      - name: '{{ network_name }}'
+  register: kamailio_facts
+
+- name: Exec kamdbctl create
+  raw: "docker exec {{ kamailio_container_name }} /bin/sh -c 'yes | env PGPASSWORD={{ pg_password }} kamdbctl create'"
+  tags: 'initdb'
+...

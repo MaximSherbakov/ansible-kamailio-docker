@@ -1,0 +1,11 @@
+SIP_DOMAIN=ipcalls24.com
+DBENGINE=PGSQL
+DBHOST='{{ pg_container_name }}'
+DBPORT='{{ pg_listen }}'
+DBNAME=kamailio
+DBRWUSER='{{ kamailio_rw_user }}'
+DBRWPW='{{ kamailio_rw_password }}'
+DBROUSER='{{ kamailio_ro_user }}'
+DBROPW='{{ kamailio_ro_password }}'
+DBROOTUSER='{{ pg_user }}'
+DBROOTPW='{{ pg_password }}'

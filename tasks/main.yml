@@ -1,0 +1,8 @@
+---
+- name: install kamailio
+  import_tasks: install.yml
+
+- name: Reload config
+  import_tasks: config.yml
+  tags: ['never', 'config']
+...

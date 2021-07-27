@@ -1,0 +1,56 @@
+---
+- name: Create backup kamailio.cfg
+  copy:
+    src: '{{ kamailio_path }}/kamailio.cfg'
+    dest: '{{ kamailio_path }}/kamailio.cfg.bkp'
+
+- name: Copy kamailio.cfg template
+  template:
+    src: "{{ item }}"
+    dest: '{{ kamailio_path }}/{{ item | basename | regex_replace("\.j2", "")}}'
+  with_fileglob:
+     - ../templates/*.j2
+
+- name: Restart kamailio
+  docker_container:
+    name: '{{ kamailio_container_name }}'
+    image: '{{ kamailio_image }}'
+    volumes: '{{ kamailio_mount_path }}'
+    ports: '{{ kamailio_ports }}'
+    networks_cli_compatible: yes
+    networks:
+      - name: '{{ network_name }}'
+    state: started
+    restart: yes
+
+- name: Check config after reload kamailio.cfg
+  block:
+    - name: get status
+      shell: 'docker exec -it {{ kamailio_container_name }} kamailio -c'
+      register: kamailio_status
+    - name: remove backup kamailio.cfg
+      file:
+        path: '{{ kamailio_path }}/kamailio.cfg.bkp'
+        state: absent
+      when: kamailio_status.rc == 0
+  rescue:
+    - name: restore from backup file
+      copy:
+        src: '{{ kamailio_path }}/kamailio.cfg.bkp'
+        dest: '{{ kamailio_path }}/kamailio.cfg'
+    - name: reload Kamailio container
+      docker_container:
+        name: '{{ kamailio_container_name }}'
+        image: '{{ kamailio_image }}'
+        volumes: '{{ kamailio_mount_path }}'
+        ports: '{{ kamailio_ports }}'
+        networks_cli_compatible: yes
+        networks:
+          - name: '{{ network_name }}'
+        state: started
+        restart: yes
+    - name: delete backup file
+      file:
+        path: '{{ kamailio_path }}/kamailio.cfg.bkp'
+        state: absent 
+...
